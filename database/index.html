@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Book Manager</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #667eea, #764ba2);
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      background: #fff;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    .form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    input {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      width: 22%;
+      min-width: 150px;
+    }
+
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .add-btn {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .add-btn:hover {
+      background: #45a049;
+    }
+
+    .list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .card {
+      background: #f9f9f9;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: 0.3s;
+    }
+
+    .card:hover {
+      transform: scale(1.02);
+      background: #f1f1f1;
+    }
+
+    .info {
+      font-size: 15px;
+    }
+
+    .actions button {
+      margin-left: 5px;
+    }
+
+    .edit-btn {
+      background: orange;
+      color: white;
+    }
+
+    .delete-btn {
+      background: red;
+      color: white;
+    }
+
+    .empty {
+      text-align: center;
+      color: gray;
+      margin-top: 20px;
+    }
+
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>📚 Book Manager</h1>
+
+  <!-- FORM -->
+  <div class="form">
+    <input id="title" placeholder="Title">
+    <input id="author" placeholder="Author">
+    <input id="price" placeholder="Price">
+    <input id="stock" placeholder="Stock">
+    <button class="add-btn" onclick="addBook()">Add Book</button>
+  </div>
+
+  <!-- LIST -->
+  <ul id="list" class="list"></ul>
+
+  <div id="emptyMsg" class="empty">No books available</div>
+
+</div>
+
+<script>
+
+// FETCH BOOKS
+async function fetchBooks() {
+  const res = await fetch("/books");
+  const data = await res.json();
+
+  const list = document.getElementById("list");
+  const emptyMsg = document.getElementById("emptyMsg");
+
+  list.innerHTML = "";
+
+  if (data.length === 0) {
+    emptyMsg.style.display = "block";
+  } else {
+    emptyMsg.style.display = "none";
+  }
+
+  data.forEach(book => {
+    const li = document.createElement("li");
+    li.className = "card";
+
+    li.innerHTML = `
+      <div class="info">
+        <b>${book.title}</b> (${book.author}) <br>
+        ₹${book.price} | Stock: ${book.stock}
+      </div>
+
+      <div class="actions">
+        <button class="edit-btn" onclick="editBook('${book._id}', ${book.price}, ${book.stock})">Edit</button>
+        <button class="delete-btn" onclick="deleteBook('${book._id}')">Delete</button>
+      </div>
+    `;
+
+    list.appendChild(li);
+  });
+}
+
+// ADD BOOK
+async function addBook() {
+  const title = document.getElementById("title").value;
+  const author = document.getElementById("author").value;
+  const price = Number(document.getElementById("price").value);
+  const stock = Number(document.getElementById("stock").value);
+
+  if (!title || !author || !price || !stock) {
+    alert("Please fill all fields");
+    return;
+  }
+
+  await fetch("/books", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, author, price, stock })
+  });
+
+  document.getElementById("title").value = "";
+  document.getElementById("author").value = "";
+  document.getElementById("price").value = "";
+  document.getElementById("stock").value = "";
+
+  fetchBooks();
+}
+
+// DELETE
+async function deleteBook(id) {
+  await fetch(`/books/${id}`, { method: "DELETE" });
+  fetchBooks();
+}
+
+// EDIT
+async function editBook(id, oldPrice, oldStock) {
+  const price = prompt("New Price:", oldPrice);
+  const stock = prompt("New Stock:", oldStock);
+
+  if (price === null || stock === null) return;
+
+  await fetch(`/books/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      price: Number(price),
+      stock: Number(stock)
+    })
+  });
+
+  fetchBooks();
+}
+
+// LOAD
+fetchBooks();
+
+</script>
+
+</body>
+</html>
